@@ -1,15 +1,25 @@
+require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const session = require('express-session');
+const axios = require('axios');
 
 const app = express();
 const PORT = 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
+app.options('*', cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.static('.'));
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'dev_secret_change_me',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false }
+}));
 
 // Arquivo de dados
 const dataFile = path.join(__dirname, 'data.json');
@@ -133,6 +143,55 @@ app.post('/api/players/:name/comments/:commentId/replies', (req, res) => {
 app.get('/api/data', (req, res) => {
   const data = readData();
   res.json(data);
+});
+
+// ── AUTENTICAÇÃO DISCORD (OAuth2) ──
+app.get('/auth/discord', (req, res) => {
+  const params = new URLSearchParams({
+    client_id: process.env.DISCORD_CLIENT_ID || '',
+    redirect_uri: process.env.DISCORD_REDIRECT_URI || 'http://localhost:3000/auth/discord/callback',
+    response_type: 'code',
+    scope: 'identify'
+  });
+  res.redirect(`https://discord.com/api/oauth2/authorize?${params.toString()}`);
+});
+
+app.get('/auth/discord/callback', async (req, res) => {
+  const code = req.query.code;
+  if (!code) return res.redirect('/');
+  try {
+    const params = new URLSearchParams({
+      client_id: process.env.DISCORD_CLIENT_ID,
+      client_secret: process.env.DISCORD_CLIENT_SECRET,
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: process.env.DISCORD_REDIRECT_URI || 'http://localhost:3000/auth/discord/callback'
+    });
+
+    const tokenRes = await axios.post('https://discord.com/api/oauth2/token', params.toString(), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+
+    const access_token = tokenRes.data.access_token;
+    const userRes = await axios.get('https://discord.com/api/users/@me', {
+      headers: { Authorization: `Bearer ${access_token}` }
+    });
+
+    req.session.user = userRes.data;
+    res.redirect('/');
+  } catch (err) {
+    console.error('Discord OAuth error', err?.response?.data || err.message || err);
+    res.redirect('/?auth_error=1');
+  }
+});
+
+app.get('/auth/status', (req, res) => {
+  if (req.session && req.session.user) return res.json({ user: req.session.user });
+  return res.json({ user: null });
+});
+
+app.post('/auth/logout', (req, res) => {
+  req.session.destroy(() => res.json({ ok: true }));
 });
 
 app.listen(PORT, () => {

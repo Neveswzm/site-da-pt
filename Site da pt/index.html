@@ -991,6 +991,9 @@
     <div class="topbar">
       <span class="topbar-title" id="topbarTitle">DASHBOARD</span>
       <span class="topbar-pill" id="topbarPill">Overview</span>
+      <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+        <button id="authBtn" class="btn-follow" style="padding:8px 12px;font-size:0.8rem;min-width:120px" onclick="handleAuthClick()">Login Discord</button>
+      </div>
     </div>
 
     <div class="content">
@@ -1157,6 +1160,34 @@
 </div><!-- /shell -->
 
 <script>
+// Se usares GitHub Pages ou outro host estático,
+// define o URL público do servidor aqui ou num script anterior.
+// Exemplo: window.API_BASE_URL = 'https://meu-servidor.onrender.com';
+const defaultApiBase = window.location.protocol.startsWith('http') ? window.location.origin : 'http://localhost:3000';
+const API_BASE_URL = window.API_BASE_URL || defaultApiBase;
+window.currentDiscordUser = null;
+async function checkAuth() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/status`, { credentials: 'include' });
+    const json = await res.json();
+    window.currentDiscordUser = json.user;
+    const authBtn = document.getElementById('authBtn');
+    if (authBtn) authBtn.textContent = json.user ? `${json.user.username}#${json.user.discriminator}` : 'Login Discord';
+  } catch (e) {
+    console.warn('Auth check failed', e);
+  }
+}
+
+function handleAuthClick() {
+  if (window.currentDiscordUser) {
+    // logout
+    fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' }).then(()=>checkAuth());
+  } else {
+    // redirect to discord oauth
+    window.location.href = `${API_BASE_URL}/auth/discord`;
+  }
+}
+
 const jogadores = [
   { nome:"Alextuga", pos:"CF", g:30, a:27, t:19, s:4  },
   { nome:"Sans",     pos:"RF", g:18, a:9,  t:8,  s:0  },
@@ -1205,7 +1236,7 @@ const pageLabels = {
 // ── SISTEMA DE SEGUIR JOGADORES (COM API) ──
 class FollowSystem {
   constructor() {
-    this.apiUrl = 'http://localhost:3000/api';
+    this.apiUrl = `${API_BASE_URL}/api`;
     this.storageKey = 'playersFollowed';
     this.historyKey = 'playerStats';
     this.commentsKey = 'playerComments'; // fallback quando não há servidor
@@ -1571,8 +1602,14 @@ async function submitComment(playerName) {
     return;
   }
 
-  const author = prompt('Nome (deixa em branco para anónimo):') || 'Anónimo';
-  
+  let author = 'Anónimo';
+  if (window.currentDiscordUser) {
+    author = `${window.currentDiscordUser.username}#${window.currentDiscordUser.discriminator}`;
+  } else {
+    const p = prompt('Nome (deixa em branco para anónimo):');
+    if (p && p.trim()) author = p.trim();
+  }
+
   await followSystem.addComment(playerName, text, author);
   input.value = '';
   
@@ -1591,7 +1628,13 @@ async function submitReply(playerName, commentId) {
   if (!input) return;
   const text = input.value.trim();
   if (!text) { alert('Escreve uma resposta!'); return; }
-  const author = prompt('Nome (deixa em branco para anónimo):') || 'Anónimo';
+  let author = 'Anónimo';
+  if (window.currentDiscordUser) {
+    author = `${window.currentDiscordUser.username}#${window.currentDiscordUser.discriminator}`;
+  } else {
+    const p = prompt('Nome (deixa em branco para anónimo):');
+    if (p && p.trim()) author = p.trim();
+  }
   await followSystem.addReply(playerName, commentId, author, text);
   input.value = '';
   // Recarrega comentários
@@ -1628,6 +1671,7 @@ document.getElementById('totalS').textContent = jogadores.reduce((s,j)=>s+j.s,0)
 
 // Render notificações na primeira carregação
 renderNotifications();
+checkAuth();
 </script>
 </body>
 </html>

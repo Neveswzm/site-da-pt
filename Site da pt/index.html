@@ -1208,6 +1208,7 @@ class FollowSystem {
     this.apiUrl = 'http://localhost:3000/api';
     this.storageKey = 'playersFollowed';
     this.historyKey = 'playerStats';
+    this.commentsKey = 'playerComments'; // fallback quando não há servidor
   }
 
   async toggleFollow(playerName) {
@@ -1262,6 +1263,10 @@ class FollowSystem {
   }
 
   async addComment(playerName, text, author = 'Anónimo') {
+    const timestamp = new Date().toLocaleString();
+    const comment = { id: 'c_' + Date.now() + '_' + Math.floor(Math.random()*9999), author, text, timestamp, replies: [] };
+
+    // Tenta API, se falhar usa localStorage como fallback
     try {
       const response = await fetch(`${this.apiUrl}/players/${encodeURIComponent(playerName)}/comments`, {
         method: 'POST',
@@ -1271,7 +1276,12 @@ class FollowSystem {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('Erro ao adicionar comentário:', error);
+      console.warn('API de comentários indisponível, a usar localStorage como fallback.');
+      const all = JSON.parse(localStorage.getItem(this.commentsKey) || '{}');
+      if (!all[playerName]) all[playerName] = [];
+      all[playerName].push(comment);
+      localStorage.setItem(this.commentsKey, JSON.stringify(all));
+      return comment;
     }
   }
 
@@ -1281,8 +1291,34 @@ class FollowSystem {
       const data = await response.json();
       return data.comments || [];
     } catch (error) {
-      console.error('Erro ao obter comentários:', error);
-      return [];
+      // fallback localStorage
+      const all = JSON.parse(localStorage.getItem(this.commentsKey) || '{}');
+      return all[playerName] || [];
+    }
+  }
+
+  // Adiciona uma resposta a um comentário (localStorage fallback)
+  async addReply(playerName, commentId, author = 'Anónimo', text) {
+    const timestamp = new Date().toLocaleString();
+    const reply = { id: 'r_' + Date.now() + '_' + Math.floor(Math.random()*9999), author, text, timestamp };
+
+    try {
+      const response = await fetch(`${this.apiUrl}/players/${encodeURIComponent(playerName)}/comments/${encodeURIComponent(commentId)}/replies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ author, text })
+      });
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      const all = JSON.parse(localStorage.getItem(this.commentsKey) || '{}');
+      if (!all[playerName]) all[playerName] = [];
+      const comment = all[playerName].find(c => c.id === commentId);
+      if (!comment) return null;
+      if (!comment.replies) comment.replies = [];
+      comment.replies.push(reply);
+      localStorage.setItem(this.commentsKey, JSON.stringify(all));
+      return reply;
     }
   }
 
@@ -1481,10 +1517,26 @@ async function loadPlayerData(playerName) {
 
     const commentsHTML = comments.length > 0 
       ? comments.map(c => `
-          <div class="comment-item">
+          <div class="comment-item" id="comment_${c.id}">
             <div class="comment-author">${c.author}</div>
             <div class="comment-text">${c.text}</div>
             <div class="comment-time">${c.timestamp}</div>
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+              <button class="btn-comment" style="padding:6px 10px;font-size:0.75rem" onclick="toggleReplyBox('${playerName}','${c.id}')">Responder</button>
+              <div id="replyBox_${playerName}_${c.id}" style="display:none;flex:1;gap:8px;display:flex;align-items:center">
+                <input type="text" id="replyInput_${playerName}_${c.id}" placeholder="Escreve a tua resposta..." style="flex:1;padding:8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--text)">
+                <button class="btn-comment" style="padding:6px 10px;font-size:0.75rem" onclick="submitReply('${playerName}','${c.id}')">Enviar</button>
+              </div>
+            </div>
+            <div id="replies_${c.id}" style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+              ${ (c.replies || []).map(r => `
+                <div style="background:rgba(255,255,255,0.02);padding:8px;border-radius:6px">
+                  <div style="font-weight:700;color:var(--grey-lt);font-size:0.75rem">${r.author}</div>
+                  <div style="color:var(--grey);font-size:0.8rem">${r.text}</div>
+                  <div style="font-size:0.68rem;color:var(--grey);margin-top:6px">${r.timestamp}</div>
+                </div>
+              `).join('') }
+            </div>
           </div>
         `).join('')
       : '<div class="no-comments">Ainda não há comentários. Sê o primeiro! 💬</div>';
@@ -1517,6 +1569,24 @@ async function submitComment(playerName) {
   input.value = '';
   
   // Recarregar comentários em tempo real
+  await loadPlayerData(playerName);
+}
+
+function toggleReplyBox(playerName, commentId) {
+  const box = document.getElementById(`replyBox_${playerName}_${commentId}`);
+  if (!box) return;
+  box.style.display = box.style.display === 'none' || box.style.display === '' ? 'flex' : 'none';
+}
+
+async function submitReply(playerName, commentId) {
+  const input = document.getElementById(`replyInput_${playerName}_${commentId}`);
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) { alert('Escreve uma resposta!'); return; }
+  const author = prompt('Nome (deixa em branco para anónimo):') || 'Anónimo';
+  await followSystem.addReply(playerName, commentId, author, text);
+  input.value = '';
+  // Recarrega comentários
   await loadPlayerData(playerName);
 }
 

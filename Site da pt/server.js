@@ -74,7 +74,20 @@ app.post('/api/players/:name/unfollow', (req, res) => {
 app.get('/api/players/:name/comments', (req, res) => {
   const { name } = req.params;
   const data = readData();
-  const comments = data.comments[name] || [];
+  if (!data.comments[name]) data.comments[name] = [];
+  // Normalizar comentários: garantir id e replies
+  let changed = false;
+  data.comments[name] = data.comments[name].map(c => {
+    if (!c.id) {
+      c.id = 'c_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+      changed = true;
+    }
+    if (!Array.isArray(c.replies)) { c.replies = []; changed = true; }
+    if (!c.timestamp) c.timestamp = new Date().toLocaleString('pt-PT');
+    return c;
+  });
+  if (changed) writeData(data);
+  const comments = data.comments[name];
   res.json({ player: name, comments });
 });
 
@@ -88,15 +101,32 @@ app.post('/api/players/:name/comments', (req, res) => {
   }
   
   const comment = {
+    id: 'c_' + Date.now() + '_' + Math.floor(Math.random()*9999),
     author: author || 'Anónimo',
     text,
-    timestamp: new Date().toLocaleString('pt-PT')
+    timestamp: new Date().toLocaleString('pt-PT'),
+    replies: []
   };
   
   data.comments[name].unshift(comment);
   writeData(data);
   
   res.json({ player: name, comment, totalComments: data.comments[name].length });
+});
+
+// Rota para adicionar reply a um comentário
+app.post('/api/players/:name/comments/:commentId/replies', (req, res) => {
+  const { name, commentId } = req.params;
+  const { author, text } = req.body;
+  const data = readData();
+  if (!data.comments[name]) data.comments[name] = [];
+  const comment = data.comments[name].find(c => c.id === commentId);
+  if (!comment) return res.status(404).json({ error: 'Comentário não encontrado' });
+  const reply = { id: 'r_' + Date.now() + '_' + Math.floor(Math.random()*9999), author: author || 'Anónimo', text, timestamp: new Date().toLocaleString('pt-PT') };
+  if (!Array.isArray(comment.replies)) comment.replies = [];
+  comment.replies.push(reply);
+  writeData(data);
+  res.json({ player: name, commentId, reply });
 });
 
 // ── ROTA PARA DADOS TOTAIS ──

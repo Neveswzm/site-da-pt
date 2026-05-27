@@ -1289,7 +1289,15 @@ class FollowSystem {
     try {
       const response = await fetch(`${this.apiUrl}/players/${encodeURIComponent(playerName)}/comments`);
       const data = await response.json();
-      return data.comments || [];
+      // Normalizar comentários recebidos
+      const comments = (data.comments || []).map(c => ({
+        id: c.id || ('c_' + Date.now() + '_' + Math.floor(Math.random()*9999)),
+        author: c.author || 'Anónimo',
+        text: c.text || '',
+        timestamp: c.timestamp || new Date().toLocaleString(),
+        replies: Array.isArray(c.replies) ? c.replies : []
+      }));
+      return comments;
     } catch (error) {
       // fallback localStorage
       const all = JSON.parse(localStorage.getItem(this.commentsKey) || '{}');

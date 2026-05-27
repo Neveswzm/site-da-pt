@@ -7,7 +7,7 @@ const session = require('express-session');
 const axios = require('axios');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({ origin: true, credentials: true }));

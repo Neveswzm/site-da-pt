@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PORTUGAL FC</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0a0a0b;
+    --surface:  #111114;
+    --surface2: #18181c;
+    --border:   #27272a;
+    --red:      #dc2626;
+    --red-dim:  rgba(220,38,38,0.12);
+    --red-glow: rgba(220,38,38,0.25);
+    --white:    #ffffff;
+    --grey:     #71717a;
+    --grey-lt:  #a1a1aa;
+    --text:     #f4f4f5;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── LAYOUT SHELL ── */
+  .shell {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+
+  .sidebar-brand {
+    padding: 32px 24px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .brand-emblem {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--red);
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .brand-emblem img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+
+  .brand-emblem-fallback {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    color: var(--red);
+    letter-spacing: 1px;
+  }
+
+  .brand-text h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.25rem;
+    letter-spacing: 3px;
+    color: var(--white);
+    line-height: 1;
+  }
+  .brand-text span {
+    font-size: 0.68rem;
+    color: var(--grey);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .nav-section {
+    padding: 20px 12px;
+    flex: 1;
+  }
+
+  .nav-label {
+    font-size: 0.62rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--grey);
+    padding: 0 12px;
+    margin-bottom: 8px;
+  }
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    color: var(--grey-lt);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    margin-bottom: 2px;
+  }
+
+  .nav-btn .nav-icon {
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .nav-btn:hover {
+    background: var(--surface2);
+    color: var(--white);
+  }
+
+  .nav-btn.active {
+    background: var(--red-dim);
+    color: var(--red);
+    font-weight: 600;
+  }
+
+  .nav-btn.active .nav-icon { color: var(--red); }
+
+  .sidebar-footer {
+    padding: 20px 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .discord-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(88,101,242,0.12);
+    border: 1px solid rgba(88,101,242,0.25);
+    border-radius: 8px;
+    color: #818cf8;
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .discord-link:hover {
+    background: rgba(88,101,242,0.22);
+    color: #a5b4fc;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    height: 64px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 36px;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .topbar-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 3px;
+    color: var(--white);
+  }
+
+  .topbar-pill {
+    background: var(--red-dim);
+    color: var(--red);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(220,38,38,0.3);
+  }
+
+  .content {
+    padding: 36px;
+  }
+
+  /* ── PAGE SYSTEM ── */
+  .page { display: none; }
+  .page.active-page { display: block; animation: fadeUp 0.25s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SECTION HEADING ── */
+  .section-head {
+    margin-bottom: 28px;
+  }
+  .section-head h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 3px;
+    color: var(--white);
+    line-height: 1;
+  }
+  .section-head p {
+    color: var(--grey);
+    font-size: 0.85rem;
+    margin-top: 5px;
+  }
+  .red-line {
+    width: 36px; height: 3px;
+    background: var(--red);
+    border-radius: 2px;
+    margin-top: 10px;
+  }
+
+  /* ── STAT CARDS (DASHBOARD) ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .kpi-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--red);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .kpi-card:hover { border-color: #3f3f46; transform: translateY(-2px); }
+  .kpi-card:hover::after { opacity: 1; }
+
+  .kpi-icon { font-size: 1.4rem; margin-bottom: 16px; }
+  .kpi-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.8rem;
+    color: var(--white);
+    line-height: 1;
+  }
+  .kpi-label {
+    font-size: 0.72rem;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--grey);
+    margin-top: 5px;
+    font-weight: 600;
+  }
+
+  /* ── DASHBOARD GRID ── */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .card-head {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-head h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 3px;
+    color: var(--grey-lt);
+  }
+
+  .card-body { padding: 20px 24px; }
+
+  /* ── TABLES ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead th {
+    font-size: 0.68rem;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--grey);
+    font-weight: 600;
+    padding: 0 16px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .table-wrap table { margin: 0; }
+
+  .table-wrap thead th {
+    padding: 14px 20px;
+    background: var(--surface2);
+  }
+
+  tbody tr {
+    transition: background 0.15s;
+  }
+
+  tbody tr:hover { background: var(--surface2); }
+
+  tbody td {
+    padding: 13px 20px;
+    font-size: 0.88rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--grey-lt);
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  .td-name {
+    font-weight: 600;
+    color: var(--white) !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .player-badge {
+    width: 28px; height: 28px;
+    background: var(--red-dim);
+    border: 1px solid rgba(220,38,38,0.25);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--red);
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+
+  .badge-pos {
+    display: inline-block;
+    padding: 3px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--grey-lt);
+    letter-spacing: 1px;
+  }
+
+  .badge-stat {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    color: var(--white);
+  }
+
+  .status-W {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 1px;
+    background: rgba(34,197,94,0.12);
+    color: #4ade80;
+    border: 1px solid rgba(34,197,94,0.25);
+  }
+  .status-D {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 1px;
+    background: rgba(234,179,8,0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(234,179,8,0.25);
+  }
+  .status-L {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 1px;
+    background: rgba(220,38,38,0.12);
+    color: #f87171;
+    border: 1px solid rgba(220,38,38,0.25);
+  }
+
+  /* ── PRÓXIMOS JOGOS ── */
+  .match-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .match-item:last-child { border-bottom: none; }
+  .match-vs { font-weight: 700; color: var(--white); font-size: 0.95rem; }
+  .match-date { font-size: 0.8rem; color: var(--grey); }
+  .match-type {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 5px;
+    background: var(--red-dim); color: var(--red);
+    border: 1px solid rgba(220,38,38,0.25);
+  }
+
+  /* ── DESTAQUE ── */
+  .highlight-img {
+    width: 100%; border-radius: 8px;
+    border: 1px solid var(--border);
+    display: block;
+  }
+
+  /* ── CAMPO DE FUTEBOL ── */
+  .campo-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0;
+  }
+
+  .campo-futebol {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    height: 620px;
+    background: #14532d;
+    border: 3px solid #166534;
+    border-radius: 12px;
+    overflow: hidden;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 77px,
+        rgba(255,255,255,0.04) 77px,
+        rgba(255,255,255,0.04) 78px
+      );
+  }
+
+  /* field lines */
+  .campo-futebol::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 10%; right: 10%;
+    height: 1px;
+    background: rgba(255,255,255,0.2);
+  }
+  .campo-futebol::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  .player-spot {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 76px;
+  }
+
+  .player-icon {
+    width: 42px; height: 42px;
+    background: var(--red);
+    border-radius: 50%;
+    margin: 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800;
+    font-size: 0.65rem;
+    border: 2px solid rgba(255,255,255,0.5);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    color: white;
+    letter-spacing: 0.5px;
+  }
+
+  .player-name-tag {
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-top: 5px;
+    display: block;
+    color: white;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* ── PERFIL ── */
+  .search-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .search-input {
+    flex: 1;
+    padding: 12px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input::placeholder { color: var(--grey); }
+  .search-input:focus { border-color: var(--red); }
+
+  .btn-search {
+    padding: 12px 24px;
+    background: var(--red);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn-search:hover { background: #b91c1c; }
+  .btn-search:active { transform: scale(0.98); }
+
+  .perfil-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    max-width: 560px;
+    animation: fadeUp 0.25s ease;
+  }
+
+  .perfil-header {
+    background: linear-gradient(135deg, #1c0a0a 0%, #2d0e0e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 28px 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .perfil-header::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: rgba(220,38,38,0.12);
+  }
+
+  .perfil-avatar {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: var(--red);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    color: white;
+    border: 3px solid rgba(255,255,255,0.15);
+    flex-shrink: 0;
+    position: relative; z-index: 1;
+  }
+
+  .perfil-info { position: relative; z-index: 1; }
+  .perfil-info h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 3px;
+    color: white;
+    line-height: 1;
+  }
+  .perfil-info .perfil-pos {
+    margin-top: 6px;
+    display: inline-block;
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid rgba(220,38,38,0.3);
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+
+  .perfil-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .perfil-stat {
+    padding: 22px 16px;
+    text-align: center;
+    border-right: 1px solid var(--border);
+  }
+  .perfil-stat:last-child { border-right: none; }
+
+  .perfil-stat-icon { font-size: 1.2rem; margin-bottom: 8px; }
+  .perfil-stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem;
+    color: var(--white);
+    line-height: 1;
+  }
+  .perfil-stat-label {
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--grey);
+    margin-top: 4px;
+  }
+
+  .not-found {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--grey);
+    font-size: 0.9rem;
+  }
+  .not-found span { display: block; font-size: 2rem; margin-bottom: 12px; }
+
+  /* ── NOTIFICAÇÕES ── */
+  .notifications-container {
+    margin-bottom: 32px;
+  }
+
+  .notification-alert {
+    background: linear-gradient(135deg, rgba(220,38,38,0.12) 0%, rgba(220,38,38,0.08) 100%);
+    border: 1px solid rgba(220,38,38,0.25);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .notification-icon {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+  }
+
+  .notification-content {
+    flex: 1;
+  }
+
+  .notification-player {
+    font-weight: 700;
+    color: var(--white);
+    font-size: 0.95rem;
+  }
+
+  .notification-message {
+    font-size: 0.85rem;
+    color: var(--grey-lt);
+    margin-top: 3px;
+  }
+
+  .notification-stats {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    font-size: 0.8rem;
+  }
+
+  .stat-change {
+    padding: 4px 10px;
+    background: rgba(220,38,38,0.2);
+    border-radius: 4px;
+    color: #fca5a5;
+    font-weight: 600;
+  }
+
+  /* ── FOLLOW BUTTON ── */
+  .btn-follow {
+    padding: 10px 20px;
+    background: var(--red);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    margin-top: 16px;
+    width: 100%;
+  }
+
+  .btn-follow:hover { background: #b91c1c; }
+  .btn-follow:active { transform: scale(0.98); }
+
+  .btn-follow.following {
+    background: var(--surface2);
+    color: var(--grey-lt);
+    border: 1px solid var(--border);
+  }
+
+  .btn-follow.following:hover {
+    background: var(--surface2);
+    color: var(--red);
+  }
+
+  .perfil-footer {
+    padding: 20px 28px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+  }
+
+  .perfil-follow-info {
+    flex: 1;
+    font-size: 0.8rem;
+    color: var(--grey);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .perfil-follow-info.active {
+    color: var(--red);
+  }
+
+  /* ── COMENTÁRIOS ── */
+  .perfil-comments-section {
+    padding: 24px 28px;
+    border-top: 1px solid var(--border);
+  }
+
+  .comments-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .comments-header h4 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.95rem;
+    letter-spacing: 2px;
+    color: var(--white);
+  }
+
+  .comments-count {
+    font-size: 0.8rem;
+    color: var(--grey);
+    background: var(--surface2);
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+
+  .comment-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .comment-input {
+    flex: 1;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: none;
+    max-height: 80px;
+  }
+
+  .comment-input::placeholder {
+    color: var(--grey);
+  }
+
+  .comment-input:focus {
+    border-color: var(--red);
+  }
+
+  .btn-comment {
+    padding: 10px 20px;
+    background: var(--red);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-comment:hover {
+    background: #b91c1c;
+  }
+
+  .comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .comment-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    animation: slideIn 0.3s ease;
+  }
+
+  .comment-author {
+    font-weight: 700;
+    color: var(--red);
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+  }
+
+  .comment-text {
+    color: var(--grey-lt);
+    font-size: 0.85rem;
+    margin: 6px 0 0;
+    line-height: 1.4;
+  }
+
+  .comment-time {
+    font-size: 0.7rem;
+    color: var(--grey);
+    margin-top: 6px;
+  }
+
+  .no-comments {
+    text-align: center;
+    padding: 20px;
+    color: var(--grey);
+    font-size: 0.85rem;
+  }
+
+  .followers-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: var(--red-dim);
+    border: 1px solid rgba(220,38,38,0.25);
+    border-radius: 8px;
+    color: var(--red);
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+  }
+
+  .followers-badge strong {
+    font-size: 1rem;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .sidebar { width: 60px; }
+    .brand-text, .nav-label, .nav-btn span:not(.nav-icon), .discord-link span { display: none; }
+    .nav-btn { justify-content: center; padding: 12px; }
+    .nav-btn .nav-icon { width: auto; }
+    .main { margin-left: 60px; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .dash-grid { grid-template-columns: 1fr; }
+    .content { padding: 20px; }
+  }
+
+  @media (max-width: 600px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .perfil-stats { grid-template-columns: repeat(2, 1fr); }
+    .perfil-stat:nth-child(2) { border-right: none; }
+    .perfil-stat:nth-child(3) { border-top: 1px solid var(--border); }
+    .perfil-stat:nth-child(4) { border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-emblem">
+        <img src="logo.png" alt="Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+        <div class="brand-emblem-fallback" style="display:none">PFC</div>
+      </div>
+      <div class="brand-text">
+        <h1>PORTUGAL FC</h1>
+        <span>Official Portal</span>
+      </div>
+    </div>
+
+    <nav class="nav-section">
+      <div class="nav-label">Menu</div>
+      <button class="nav-btn active" onclick="showPage('dashboard', this)">
+        <span class="nav-icon">⊞</span><span>Dashboard</span>
+      </button>
+      <button class="nav-btn" onclick="showPage('stats', this)">
+        <span class="nav-icon">📊</span><span>Player Stats</span>
+      </button>
+      <button class="nav-btn" onclick="showPage('plantel', this)">
+        <span class="nav-icon">🟢</span><span>Plantel</span>
+      </button>
+      <button class="nav-btn" onclick="showPage('perfil', this)">
+        <span class="nav-icon">👤</span><span>Perfil</span>
+      </button>
+      <button class="nav-btn" onclick="showPage('scrims', this)">
+        <span class="nav-icon">⚔</span><span>Scrims</span>
+      </button>
+      <button class="nav-btn" onclick="showPage('oficiais', this)">
+        <span class="nav-icon">🏆</span><span>Oficiais</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="https://discord.gg/WA97F9GN" target="_blank" class="discord-link">
+        <span>💬</span><span>Discord</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <div class="main">
+
+    <div class="topbar">
+      <span class="topbar-title" id="topbarTitle">DASHBOARD</span>
+      <span class="topbar-pill" id="topbarPill">Overview</span>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div id="dashboard" class="page active-page">
+        <div class="section-head">
+          <h2>Visão Geral</h2>
+          <p>Estatísticas totais da equipa</p>
+          <div class="red-line"></div>
+        </div>
+
+        <!-- NOTIFICAÇÕES DOS JOGADORES SEGUIDOS -->
+        <div class="notifications-container" id="notificationsContainer"></div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon">⚽</div>
+            <div class="kpi-val" id="totalG">—</div>
+            <div class="kpi-label">Golos Totais</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">🎯</div>
+            <div class="kpi-val" id="totalA">—</div>
+            <div class="kpi-label">Assistências</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">👟</div>
+            <div class="kpi-val" id="totalT">—</div>
+            <div class="kpi-label">Tackles</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">🧤</div>
+            <div class="kpi-val" id="totalS">—</div>
+            <div class="kpi-label">Defesas</div>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card-head">
+              <h3>Próximos Jogos</h3>
+            </div>
+            <div class="card-body">
+              <div class="match-item">
+                <div>
+                  <div class="match-vs">Spain</div>
+                  <div class="match-date">30 Maio</div>
+                </div>
+                <span class="match-type">Scrim</span>
+              </div>
+              <div class="match-item">
+                <div>
+                  <div class="match-vs">Germany</div>
+                  <div class="match-date">02 Junho</div>
+                </div>
+                <span class="match-type">Oficial</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h3>Destaque da Semana</h3>
+            </div>
+            <div class="card-body">
+              <img src="TOWT.PNG" alt="Destaque" class="highlight-img"
+                onerror="this.style.display='none'; this.insertAdjacentHTML('afterend','<p style=\'color:var(--grey);font-size:.85rem;text-align:center;padding:20px 0\'>Sem imagem disponível</p>')">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLAYER STATS -->
+      <div id="stats" class="page">
+        <div class="section-head">
+          <h2>Player Stats</h2>
+          <p>Estatísticas individuais de todos os jogadores</p>
+          <div class="red-line"></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Jogador</th>
+                <th>Pos</th>
+                <th>⚽ G</th>
+                <th>🎯 A</th>
+                <th>👟 T</th>
+                <th>🧤 S</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PLANTEL -->
+      <div id="plantel" class="page">
+        <div class="section-head">
+          <h2>Plantel</h2>
+          <p>Formação e posições da equipa</p>
+          <div class="red-line"></div>
+        </div>
+        <div class="campo-wrap">
+          <div class="campo-futebol">
+            <div class="player-spot" style="top:10%;left:50%"><div class="player-icon">CF</div><span class="player-name-tag">ALEX</span></div>
+            <div class="player-spot" style="top:28%;left:22%"><div class="player-icon">LF</div><span class="player-name-tag">SANS</span></div>
+            <div class="player-spot" style="top:28%;left:78%"><div class="player-icon">RF</div><span class="player-name-tag">TAZITO</span></div>
+            <div class="player-spot" style="top:50%;left:50%"><div class="player-icon">CM</div><span class="player-name-tag">FILIGOU</span></div>
+            <div class="player-spot" style="top:72%;left:22%"><div class="player-icon">LB</div><span class="player-name-tag">ADONIS</span></div>
+            <div class="player-spot" style="top:72%;left:78%"><div class="player-icon">RB</div><span class="player-name-tag">QUENINHO</span></div>
+            <div class="player-spot" style="top:90%;left:50%"><div class="player-icon">GK</div><span class="player-name-tag">RODRI</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PERFIL -->
+      <div id="perfil" class="page">
+        <div class="section-head">
+          <h2>Perfil do Jogador</h2>
+          <p>Pesquisa as estatísticas de qualquer jogador</p>
+          <div class="red-line"></div>
+        </div>
+        <div class="search-row">
+          <input type="text" id="searchInput" class="search-input" placeholder="Nome do jogador..." onkeydown="if(event.key==='Enter') pesquisarJogador()">
+          <button class="btn-search" onclick="pesquisarJogador()">Procurar</button>
+        </div>
+        <div id="perfilResultado"></div>
+      </div>
+
+      <!-- SCRIMS -->
+      <div id="scrims" class="page">
+        <div class="section-head">
+          <h2>Scrims</h2>
+          <p>Histórico de jogos de treino</p>
+          <div class="red-line"></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Resultado</th><th>Score</th><th>Adversário</th><th>MVP</th><th>Data</th></tr></thead>
+            <tbody id="scrimsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- OFICIAIS -->
+      <div id="oficiais" class="page">
+        <div class="section-head">
+          <h2>Jogos Oficiais</h2>
+          <p>Histórico de jogos oficiais</p>
+          <div class="red-line"></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Resultado</th><th>Score</th><th>Adversário</th><th>MVP</th><th>Data</th></tr></thead>
+            <tbody id="oficiaisBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+const jogadores = [
+  { nome:"Alextuga", pos:"CF", g:30, a:27, t:19, s:4  },
+  { nome:"Sans",     pos:"RF", g:18, a:9,  t:8,  s:0  },
+  { nome:"Pd7",      pos:"RF", g:8,  a:3,  t:5,  s:0  },
+  { nome:"Queninho", pos:"RF", g:7,  a:1,  t:9,  s:0  },
+  { nome:"Jv",       pos:"LF", g:6,  a:0,  t:1,  s:0  },
+  { nome:"Loki",     pos:"CM", g:6,  a:5,  t:12, s:0  },
+  { nome:"Tazito",   pos:"LF", g:6,  a:3,  t:3,  s:1  },
+  { nome:"Kava",     pos:"LB", g:3,  a:7,  t:10, s:13 },
+  { nome:"Alasis",   pos:"LF", g:2,  a:2,  t:1,  s:0  },
+  { nome:"Jack",     pos:"LF", g:2,  a:5,  t:0,  s:0  },
+  { nome:"Busyas",   pos:"CM", g:0,  a:6,  t:6,  s:5  },
+  { nome:"Patao",    pos:"CM", g:0,  a:3,  t:4,  s:4  },
+  { nome:"Ls",       pos:"LB", g:0,  a:3,  t:3,  s:3  },
+  { nome:"Nokia",    pos:"RB", g:0,  a:2,  t:10, s:1  },
+  { nome:"Gabbesto", pos:"RB", g:0,  a:1,  t:4,  s:3  },
+  { nome:"Goat",     pos:"LB", g:0,  a:2,  t:3,  s:5  },
+  { nome:"Zep",      pos:"GK", g:0,  a:0,  t:0,  s:10 },
+  { nome:"Rodri",    pos:"GK", g:0,  a:0,  t:1,  s:26 },
+  { nome:"Pedrin",   pos:"RB", g:0,  a:0,  t:1,  s:3  },
+  { nome:"Ciclespi", pos:"RB", g:0,  a:0,  t:4,  s:1  },
+  { nome:"Bolacha",  pos:"GK", g:0,  a:0,  t:8,  s:11 },
+  { nome:"Dylan",    pos:"CM", g:0,  a:2,  t:1,  s:3  },
+  { nome:"Paz",      pos:"CM", g:0,  a:2,  t:1,  s:0  },
+  { nome:"Adonis",   pos:"RB", g:0,  a:1,  t:1,  s:0  }
+];
+
+const historicoScrims = [
+  { status:"W", res:"13-7",  adv:"Spain",    mvp:"Sergio",  data:"23 Maio" },
+  { status:"D", res:"17-19", adv:"NewCastle", mvp:"Veteran", data:"22 Maio" }
+];
+const historicoOficiais = [
+  { status:"W", res:"10-2", adv:"Auxellier", mvp:"Todos", data:"24 Maio" },
+  { status:"D", res:"9-12", adv:"Germany",   mvp:"Todos", data:"24 Maio" }
+];
+
+const pageLabels = {
+  dashboard: ['DASHBOARD','Overview'],
+  stats:     ['PLAYER STATS','Estatísticas'],
+  plantel:   ['PLANTEL','Formação'],
+  perfil:    ['PERFIL','Jogador'],
+  scrims:    ['SCRIMS','Histórico'],
+  oficiais:  ['OFICIAIS','Histórico'],
+};
+
+// ── SISTEMA DE SEGUIR JOGADORES (COM API) ──
+class FollowSystem {
+  constructor() {
+    this.apiUrl = 'http://localhost:3000/api';
+    this.storageKey = 'playersFollowed';
+    this.historyKey = 'playerStats';
+  }
+
+  async toggleFollow(playerName) {
+    const followed = this.getFollowed();
+    const idx = followed.indexOf(playerName);
+    
+    try {
+      if (idx > -1) {
+        // Deixar de seguir
+        followed.splice(idx, 1);
+        const response = await fetch(`${this.apiUrl}/players/${encodeURIComponent(playerName)}/unfollow`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+      } else {
+        // Seguir
+        followed.push(playerName);
+        const response = await fetch(`${this.apiUrl}/players/${encodeURIComponent(playerName)}/follow`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+      }
+      
+      localStorage.setItem(this.storageKey, JSON.stringify(followed));
+      return followed.includes(playerName);
+    } catch (error) {
+      console.error('Erro ao atualizar seguidor:', error);
+      return false;
+    }
+  }
+
+  isFollowing(playerName) {
+    return this.getFollowed().includes(playerName);
+  }
+
+  getFollowed() {
+    const followed = localStorage.getItem(this.storageKey);
+    return followed ? JSON.parse(followed) : [];
+  }
+
+  async getFollowersCount(playerName) {
+    try {
+      const response = await fetch(`${this.apiUrl}/players/${encodeURIComponent(playerName)}/followers`);
+      const data = await response.json();
+      return data.followers;
+    } catch (error) {
+      console.error('Erro ao obter seguidores:', error);
+      return 0;
+    }
+  }
+
+  async addComment(playerName, text, author = 'Anónimo') {
+    try {
+      const response = await fetch(`${this.apiUrl}/players/${encodeURIComponent(playerName)}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ author, text })
+      });
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Erro ao adicionar comentário:', error);
+    }
+  }
+
+  async getComments(playerName) {
+    try {
+      const response = await fetch(`${this.apiUrl}/players/${encodeURIComponent(playerName)}/comments`);
+      const data = await response.json();
+      return data.comments || [];
+    } catch (error) {
+      console.error('Erro ao obter comentários:', error);
+      return [];
+    }
+  }
+
+  getNotifications() {
+    const followed = this.getFollowed();
+    const notifications = [];
+    const history = JSON.parse(localStorage.getItem(this.historyKey) || '{}');
+
+    followed.forEach(playerName => {
+      const player = jogadores.find(p => p.nome === playerName);
+      if (!player) return;
+
+      const prevStats = history[playerName] || { g: 0, a: 0, t: 0, s: 0 };
+      const changes = {
+        g: player.g - prevStats.g,
+        a: player.a - prevStats.a,
+        t: player.t - prevStats.t,
+        s: player.s - prevStats.s
+      };
+
+      if (changes.g !== 0 || changes.a !== 0 || changes.t !== 0 || changes.s !== 0) {
+        notifications.push({ player, changes, prevStats });
+      }
+    });
+
+    return notifications;
+  }
+
+  updateHistory() {
+    const history = {};
+    jogadores.forEach(j => {
+      history[j.nome] = { g: j.g, a: j.a, t: j.t, s: j.s };
+    });
+    localStorage.setItem(this.historyKey, JSON.stringify(history));
+  }
+
+  simulateUpdate(playerName, type, amount = 1) {
+    const player = jogadores.find(p => p.nome === playerName);
+    if (!player) return;
+    player[type] += amount;
+  }
+
+  initHistory() {
+    if (!localStorage.getItem(this.historyKey)) {
+      const history = {};
+      jogadores.forEach(j => {
+        history[j.nome] = { g: j.g, a: j.a, t: j.t, s: j.s };
+      });
+      localStorage.setItem(this.historyKey, JSON.stringify(history));
+    }
+  }
+}
+
+const followSystem = new FollowSystem();
+followSystem.initHistory();
+
+function renderNotifications() {
+  const container = document.getElementById('notificationsContainer');
+  const notifications = followSystem.getNotifications();
+
+  if (notifications.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const html = notifications.map(notif => {
+    const { player, changes } = notif;
+    let message = `${player.nome} teve mudanças no último jogo:`;
+    const statChanges = [];
+
+    if (changes.g > 0) statChanges.push(`+${changes.g} Golos`);
+    if (changes.a > 0) statChanges.push(`+${changes.a} Assist.`);
+    if (changes.t > 0) statChanges.push(`+${changes.t} Tackles`);
+    if (changes.s > 0) statChanges.push(`+${changes.s} Defesas`);
+
+    return `
+      <div class="notification-alert">
+        <div class="notification-icon">🎯</div>
+        <div class="notification-content">
+          <div class="notification-player">${player.nome} (${player.pos})</div>
+          <div class="notification-message">${message}</div>
+          <div class="notification-stats">
+            ${statChanges.map(s => `<span class="stat-change">${s}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active-page');
+  if (btn) btn.classList.add('active');
+  const lbl = pageLabels[id];
+  document.getElementById('topbarTitle').textContent = lbl[0];
+  document.getElementById('topbarPill').textContent  = lbl[1];
+
+  if (id === 'dashboard') {
+    renderNotifications();
+  }
+}
+
+function pesquisarJogador() {
+  const nome = document.getElementById('searchInput').value.trim();
+  const j = jogadores.find(p => p.nome.toLowerCase() === nome.toLowerCase());
+  const res = document.getElementById('perfilResultado');
+  if (!j) {
+    res.innerHTML = `<div class="not-found"><span>🔍</span>Jogador "${nome}" não encontrado.</div>`;
+    return;
+  }
+
+  const initials = j.nome.slice(0,2).toUpperCase();
+  const isFollowing = followSystem.isFollowing(j.nome);
+  const btnText = isFollowing ? '★ A Seguir' : '☆ Seguir';
+  const btnClass = isFollowing ? 'following' : '';
+
+  // Mostrar card com carregamento e depois atualizar
+  res.innerHTML = `
+    <div class="perfil-card">
+      <div class="perfil-header">
+        <div class="perfil-avatar">${initials}</div>    
+        <div class="perfil-info">
+          <h2>${j.nome}</h2>
+          <span class="perfil-pos">${j.pos}</span>
+        </div>
+      </div>
+      <div class="perfil-stats">
+        <div class="perfil-stat">
+          <div class="perfil-stat-icon">⚽</div>
+          <div class="perfil-stat-val">${j.g}</div>
+          <div class="perfil-stat-label">Golos</div>
+        </div>
+        <div class="perfil-stat">
+          <div class="perfil-stat-icon">🎯</div>
+          <div class="perfil-stat-val">${j.a}</div>
+          <div class="perfil-stat-label">Assist.</div>
+        </div>
+        <div class="perfil-stat">
+          <div class="perfil-stat-icon">👟</div>
+          <div class="perfil-stat-val">${j.t}</div>
+          <div class="perfil-stat-label">Tackles</div>
+        </div>
+        <div class="perfil-stat">
+          <div class="perfil-stat-icon">🧤</div>
+          <div class="perfil-stat-val">${j.s}</div>
+          <div class="perfil-stat-label">Defesas</div>
+        </div>
+      </div>
+      <div class="perfil-footer">
+        <div style="display:flex;gap:12px;flex:1;align-items:center">
+          <div class="perfil-follow-info ${isFollowing ? 'active' : ''}">
+            ${isFollowing ? '✓ Notificações ativas' : 'Não estás a seguir'}
+          </div>
+          <div class="followers-badge">
+            👥 <strong id="followersCount">-</strong> Seguidores
+          </div>
+        </div>
+        <button class="btn-follow ${btnClass}" onclick="toggleFollowPlayer('${j.nome}')">${btnText}</button>
+      </div>
+      <div class="perfil-comments-section">
+        <div class="comments-header">
+          <h4>Comentários</h4>
+          <span class="comments-count" id="commentsCount">0 Comentários</span>
+        </div>
+        <div class="comment-input-group">
+          <input type="text" class="comment-input" id="commentInput_${j.nome}" placeholder="Deixa um comentário..." maxlength="200">
+          <button class="btn-comment" onclick="submitComment('${j.nome}')">Enviar</button>
+        </div>
+        <div class="comments-list" id="commentsList">
+          <div style="text-align:center;padding:20px;color:var(--grey)">Carregando comentários...</div>
+        </div>
+      </div>
+    </div>`;
+
+  // Carregar dados em tempo real
+  loadPlayerData(j.nome);
+}
+
+async function loadPlayerData(playerName) {
+  try {
+    // Carregar seguidores
+    const followersCount = await followSystem.getFollowersCount(playerName);
+    const followersEl = document.getElementById('followersCount');
+    if (followersEl) followersEl.textContent = followersCount;
+
+    // Carregar comentários
+    const comments = await followSystem.getComments(playerName);
+    const commentsCountEl = document.getElementById('commentsCount');
+    if (commentsCountEl) {
+      commentsCountEl.textContent = `${comments.length} Comentário${comments.length !== 1 ? 's' : ''}`;
+    }
+
+    const commentsHTML = comments.length > 0 
+      ? comments.map(c => `
+          <div class="comment-item">
+            <div class="comment-author">${c.author}</div>
+            <div class="comment-text">${c.text}</div>
+            <div class="comment-time">${c.timestamp}</div>
+          </div>
+        `).join('')
+      : '<div class="no-comments">Ainda não há comentários. Sê o primeiro! 💬</div>';
+
+    const commentsListEl = document.getElementById('commentsList');
+    if (commentsListEl) commentsListEl.innerHTML = commentsHTML;
+  } catch (error) {
+    console.error('Erro ao carregar dados do jogador:', error);
+  }
+}
+
+async function toggleFollowPlayer(playerName) {
+  const isNowFollowing = await followSystem.toggleFollow(playerName);
+  pesquisarJogador();
+  renderNotifications();
+}
+
+async function submitComment(playerName) {
+  const input = document.getElementById(`commentInput_${playerName}`);
+  const text = input.value.trim();
+  
+  if (!text) {
+    alert('Escreve um comentário!');
+    return;
+  }
+
+  const author = prompt('Nome (deixa em branco para anónimo):') || 'Anónimo';
+  
+  await followSystem.addComment(playerName, text, author);
+  input.value = '';
+  
+  // Recarregar comentários em tempo real
+  await loadPlayerData(playerName);
+}
+
+// Tables
+document.getElementById('tabelaBody').innerHTML = jogadores.map(j => `
+  <tr>
+    <td><div class="td-name"><div class="player-badge">${j.nome.slice(0,2).toUpperCase()}</div>${j.nome}</div></td>
+    <td><span class="badge-pos">${j.pos}</span></td>
+    <td><span class="badge-stat">${j.g}</span></td>
+    <td><span class="badge-stat">${j.a}</span></td>
+    <td><span class="badge-stat">${j.t}</span></td>
+    <td><span class="badge-stat">${j.s}</span></td>
+  </tr>`).join('');
+
+const matchRow = s => `
+  <tr>
+    <td><span class="status-${s.status}">${s.status === 'W' ? 'VITÓRIA' : s.status === 'D' ? 'EMPATE' : 'DERROTA'}</span></td>
+    <td><strong>${s.res}</strong></td>
+    <td>${s.adv}</td>
+    <td>${s.mvp}</td>
+    <td style="color:var(--grey)">${s.data}</td>
+  </tr>`;
+
+document.getElementById('scrimsBody').innerHTML   = historicoScrims.map(matchRow).join('');
+document.getElementById('oficiaisBody').innerHTML = historicoOficiais.map(matchRow).join('');
+
+document.getElementById('totalG').textContent = jogadores.reduce((s,j)=>s+j.g,0);
+document.getElementById('totalA').textContent = jogadores.reduce((s,j)=>s+j.a,0);
+document.getElementById('totalT').textContent = jogadores.reduce((s,j)=>s+j.t,0);
+document.getElementById('totalS').textContent = jogadores.reduce((s,j)=>s+j.s,0);
+
+// Render notificações na primeira carregação
+renderNotifications();
+</script>
+</body>
+</html>

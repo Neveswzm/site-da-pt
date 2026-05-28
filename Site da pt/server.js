@@ -28,8 +28,9 @@ const dataFile = path.join(__dirname, 'data.json');
 function initDataFile() {
   if (!fs.existsSync(dataFile)) {
     const initialData = {
-      followers: {},
-      comments: {}
+        followers: {},
+        comments: {},
+        profiles: {}
     };
     fs.writeFileSync(dataFile, JSON.stringify(initialData, null, 2));
   }
@@ -88,12 +89,15 @@ app.get('/api/players/:name/comments', (req, res) => {
   // Normalizar comentários: garantir id e replies
   let changed = false;
   data.comments[name] = data.comments[name].map(c => {
-    if (!c.id) {
-      c.id = 'c_' + Date.now() + '_' + Math.floor(Math.random()*9999);
-      changed = true;
-    }
+    if (!c.id) { c.id = 'c_' + Date.now() + '_' + Math.floor(Math.random()*9999); changed = true; }
     if (!Array.isArray(c.replies)) { c.replies = []; changed = true; }
     if (!c.timestamp) c.timestamp = new Date().toLocaleString('pt-PT');
+    // ensure replies have ids and timestamps
+    c.replies = (c.replies || []).map(r => {
+      if (!r.id) r.id = 'r_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+      if (!r.timestamp) r.timestamp = new Date().toLocaleString('pt-PT');
+      return r;
+    });
     return c;
   });
   if (changed) writeData(data);
@@ -109,10 +113,24 @@ app.post('/api/players/:name/comments', (req, res) => {
   if (!data.comments[name]) {
     data.comments[name] = [];
   }
-  
+  // If user is authenticated, prefer session info (and include avatar + displayName override)
+  let commentAuthor = author || 'Anónimo';
+  let authorAvatar = null;
+  let authorId = null;
+  if (req.session && req.session.user) {
+    const user = req.session.user;
+    authorId = user.id;
+    const profile = (data.profiles && data.profiles[user.id]) || {};
+    commentAuthor = profile.displayName || (user.username ? `${user.username}${user.discriminator ? '#'+user.discriminator : ''}` : commentAuthor);
+    if (user.avatar) authorAvatar = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+    else if (user.discriminator) authorAvatar = `https://cdn.discordapp.com/embed/avatars/${parseInt(user.discriminator) % 5}.png`;
+  }
+
   const comment = {
     id: 'c_' + Date.now() + '_' + Math.floor(Math.random()*9999),
-    author: author || 'Anónimo',
+    author: commentAuthor,
+    authorId: authorId || null,
+    authorAvatar: authorAvatar,
     text,
     timestamp: new Date().toLocaleString('pt-PT'),
     replies: []
@@ -132,7 +150,16 @@ app.post('/api/players/:name/comments/:commentId/replies', (req, res) => {
   if (!data.comments[name]) data.comments[name] = [];
   const comment = data.comments[name].find(c => c.id === commentId);
   if (!comment) return res.status(404).json({ error: 'Comentário não encontrado' });
-  const reply = { id: 'r_' + Date.now() + '_' + Math.floor(Math.random()*9999), author: author || 'Anónimo', text, timestamp: new Date().toLocaleString('pt-PT') };
+  let replyAuthor = author || 'Anónimo';
+  let replyAvatar = null;
+  if (req.session && req.session.user) {
+    const user = req.session.user;
+    const profile = (data.profiles && data.profiles[user.id]) || {};
+    replyAuthor = profile.displayName || (user.username ? `${user.username}${user.discriminator ? '#'+user.discriminator : ''}` : replyAuthor);
+    if (user.avatar) replyAvatar = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+    else if (user.discriminator) replyAvatar = `https://cdn.discordapp.com/embed/avatars/${parseInt(user.discriminator) % 5}.png`;
+  }
+  const reply = { id: 'r_' + Date.now() + '_' + Math.floor(Math.random()*9999), author: replyAuthor, authorAvatar: replyAvatar, text, timestamp: new Date().toLocaleString('pt-PT') };
   if (!Array.isArray(comment.replies)) comment.replies = [];
   comment.replies.push(reply);
   writeData(data);
@@ -186,8 +213,30 @@ app.get('/auth/discord/callback', async (req, res) => {
 });
 
 app.get('/auth/status', (req, res) => {
-  if (req.session && req.session.user) return res.json({ user: req.session.user });
+  const data = readData();
+  if (req.session && req.session.user) {
+    const user = Object.assign({}, req.session.user);
+    // attach saved display name if exists
+    const profile = data.profiles && data.profiles[user.id];
+    if (profile && profile.displayName) user.displayName = profile.displayName;
+    return res.json({ user });
+  }
   return res.json({ user: null });
+});
+
+// Atualizar nome de exibição no site (sobrepor nome Discord)
+app.post('/auth/display-name', (req, res) => {
+  const { displayName } = req.body || {};
+  if (!req.session || !req.session.user) return res.status(401).json({ error: 'Not authenticated' });
+  const data = readData();
+  if (!data.profiles) data.profiles = {};
+  data.profiles[req.session.user.id] = data.profiles[req.session.user.id] || {};
+  data.profiles[req.session.user.id].displayName = displayName && displayName.trim() ? displayName.trim() : null;
+  writeData(data);
+  // reflect in session
+  if (displayName && displayName.trim()) req.session.user.displayName = displayName.trim();
+  else delete req.session.user.displayName;
+  res.json({ ok: true, displayName: req.session.user.displayName || null });
 });
 
 app.post('/auth/logout', (req, res) => {

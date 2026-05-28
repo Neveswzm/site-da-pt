@@ -993,6 +993,7 @@
       <span class="topbar-pill" id="topbarPill">Overview</span>
       <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
         <button id="authBtn" class="btn-follow" style="padding:8px 12px;font-size:0.8rem;min-width:120px" onclick="handleAuthClick()">Login Discord</button>
+        <button id="editNameBtn" class="btn-follow" style="display:none;padding:8px 12px;font-size:0.8rem;min-width:120px" onclick="editDisplayName()">Editar Nome</button>
       </div>
     </div>
 
@@ -1172,7 +1173,17 @@ async function checkAuth() {
     const json = await res.json();
     window.currentDiscordUser = json.user;
     const authBtn = document.getElementById('authBtn');
-    if (authBtn) authBtn.textContent = json.user ? `${json.user.username}#${json.user.discriminator}` : 'Login Discord';
+    const editBtn = document.getElementById('editNameBtn');
+    if (json.user) {
+      const u = json.user;
+      const avatar = getDiscordAvatarUrl(u);
+      const display = u.displayName || (u.username ? `${u.username}${u.discriminator ? '#'+u.discriminator : ''}` : 'Discord');
+      if (authBtn) authBtn.innerHTML = `<img src="${avatar}" style="width:28px;height:28px;border-radius:50%;margin-right:8px;vertical-align:middle"> ${escapeHtml(display)}`;
+      if (editBtn) editBtn.style.display = 'inline-block';
+    } else {
+      if (authBtn) authBtn.textContent = 'Login Discord';
+      if (editBtn) editBtn.style.display = 'none';
+    }
   } catch (e) {
     console.warn('Auth check failed', e);
   }
@@ -1181,11 +1192,44 @@ async function checkAuth() {
 function handleAuthClick() {
   if (window.currentDiscordUser) {
     // logout
-    fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' }).then(()=>checkAuth());
+    fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' }).then(()=>{
+      window.currentDiscordUser = null;
+      checkAuth();
+    });
   } else {
     // redirect to discord oauth
     window.location.href = `${API_BASE_URL}/auth/discord`;
   }
+}
+
+function getDiscordAvatarUrl(user) {
+  if (!user) return '';
+  if (user.avatar) return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`;
+  if (user.discriminator) return `https://cdn.discordapp.com/embed/avatars/${parseInt(user.discriminator) % 5}.png`;
+  return '';
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>\"'`]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;', '`':'&#96;'}[s]));
+}
+
+async function editDisplayName() {
+  const name = prompt('Novo nome de perfil no site (deixa em branco para remover):', window.currentDiscordUser && window.currentDiscordUser.displayName ? window.currentDiscordUser.displayName : '');
+  if (name === null) return;
+  try {
+    await fetch(`${API_BASE_URL}/auth/display-name`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ displayName: name }) });
+    await checkAuth();
+    // refresh current profile view if open
+    const active = document.querySelector('.page.active-page');
+    if (active && active.id === 'perfil') {
+      const resEl = document.getElementById('perfilResultado');
+      if (resEl && resEl.querySelector('h2')) {
+        const playerName = resEl.querySelector('h2').textContent;
+        if (playerName) loadPlayerData(playerName);
+      }
+    }
+  } catch (err) { console.error('Erro ao atualizar nome', err); alert('Falha ao atualizar o nome.'); }
 }
 
 const jogadores = [
@@ -1302,6 +1346,7 @@ class FollowSystem {
       const response = await fetch(`${this.apiUrl}/players/${encodeURIComponent(playerName)}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ author, text })
       });
       const result = await response.json();
@@ -1318,7 +1363,7 @@ class FollowSystem {
 
   async getComments(playerName) {
     try {
-      const response = await fetch(`${this.apiUrl}/players/${encodeURIComponent(playerName)}/comments`);
+      const response = await fetch(`${this.apiUrl}/players/${encodeURIComponent(playerName)}/comments`, { credentials: 'include' });
       const data = await response.json();
       // Normalizar comentários recebidos
       const comments = (data.comments || []).map(c => ({
@@ -1345,6 +1390,7 @@ class FollowSystem {
       const response = await fetch(`${this.apiUrl}/players/${encodeURIComponent(playerName)}/comments/${encodeURIComponent(commentId)}/replies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ author, text })
       });
       const result = await response.json();
@@ -1557,24 +1603,38 @@ async function loadPlayerData(playerName) {
     const commentsHTML = comments.length > 0 
       ? comments.map(c => `
           <div class="comment-item" id="comment_${c.id}">
-            <div class="comment-author">${c.author}</div>
-            <div class="comment-text">${c.text}</div>
-            <div class="comment-time">${c.timestamp}</div>
-            <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-              <button class="btn-comment" style="padding:6px 10px;font-size:0.75rem" onclick="toggleReplyBox('${playerName}','${c.id}')">Responder</button>
-              <div id="replyBox_${playerName}_${c.id}" style="display:none;flex:1;gap:8px;display:flex;align-items:center">
-                <input type="text" id="replyInput_${playerName}_${c.id}" placeholder="Escreve a tua resposta..." style="flex:1;padding:8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--text)">
-                <button class="btn-comment" style="padding:6px 10px;font-size:0.75rem" onclick="submitReply('${playerName}','${c.id}')">Enviar</button>
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--red);flex-shrink:0">
+                ${c.authorAvatar ? `<img src="${c.authorAvatar}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700">${(c.author||'A').slice(0,2).toUpperCase()}</div>`}
               </div>
-            </div>
-            <div id="replies_${c.id}" style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
-              ${ (c.replies || []).map(r => `
-                <div style="background:rgba(255,255,255,0.02);padding:8px;border-radius:6px">
-                  <div style="font-weight:700;color:var(--grey-lt);font-size:0.75rem">${r.author}</div>
-                  <div style="color:var(--grey);font-size:0.8rem">${r.text}</div>
-                  <div style="font-size:0.68rem;color:var(--grey);margin-top:6px">${r.timestamp}</div>
+              <div style="flex:1">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div class="comment-author">${c.author}</div>
+                  <div class="comment-time" style="font-size:0.72rem;color:var(--grey)">${c.timestamp}</div>
                 </div>
-              `).join('') }
+                <div class="comment-text" style="margin-top:6px">${c.text}</div>
+                <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+                  <button class="btn-comment" style="padding:6px 10px;font-size:0.75rem" onclick="toggleReplyBox('${playerName}','${c.id}')">Responder</button>
+                  <div id="replyBox_${playerName}_${c.id}" style="display:none;flex:1;gap:8px;display:flex;align-items:center">
+                    <input type="text" id="replyInput_${playerName}_${c.id}" placeholder="Escreve a tua resposta..." style="flex:1;padding:8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--text)">
+                    <button class="btn-comment" style="padding:6px 10px;font-size:0.75rem" onclick="submitReply('${playerName}','${c.id}')">Enviar</button>
+                  </div>
+                </div>
+                <div id="replies_${c.id}" style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+                  ${ (c.replies || []).map(r => `
+                    <div style="display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,0.02);padding:8px;border-radius:6px">
+                      <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;background:var(--surface2);flex-shrink:0">
+                        ${r.authorAvatar ? `<img src="${r.authorAvatar}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--grey);font-weight:700">${(r.author||'A').slice(0,2).toUpperCase()}</div>`}
+                      </div>
+                      <div style="flex:1">
+                        <div style="font-weight:700;color:var(--grey-lt);font-size:0.75rem">${r.author}</div>
+                        <div style="color:var(--grey);font-size:0.8rem">${r.text}</div>
+                        <div style="font-size:0.68rem;color:var(--grey);margin-top:6px">${r.timestamp}</div>
+                      </div>
+                    </div>
+                  `).join('') }
+                </div>
+              </div>
             </div>
           </div>
         `).join('')
